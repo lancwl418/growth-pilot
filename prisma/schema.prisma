@@ -1,0 +1,271 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// DIMENSION TABLES
+// ============================================================
+
+model DimProduct {
+  id          String   @id @default(cuid())
+  shopifyId   String   @unique @map("shopify_id")
+  title       String
+  vendor      String?
+  productType String?  @map("product_type")
+  tags        String[]
+  status      String   @default("active")
+  createdAt   DateTime @map("created_at")
+  updatedAt   DateTime @map("updated_at")
+  syncedAt    DateTime @default(now()) @map("synced_at")
+
+  variants   DimVariant[]
+  orderItems FactOrderItem[]
+
+  @@map("dim_products")
+}
+
+model DimVariant {
+  id             String   @id @default(cuid())
+  shopifyId      String   @unique @map("shopify_id")
+  productId      String   @map("product_id")
+  title          String
+  sku            String?
+  price          Decimal  @db.Decimal(10, 2)
+  compareAtPrice Decimal? @map("compare_at_price") @db.Decimal(10, 2)
+  inventoryQty   Int?     @map("inventory_qty")
+  syncedAt       DateTime @default(now()) @map("synced_at")
+
+  product    DimProduct      @relation(fields: [productId], references: [id])
+  orderItems FactOrderItem[]
+
+  @@map("dim_variants")
+}
+
+model DimCustomer {
+  id           String    @id @default(cuid())
+  shopifyId    String    @unique @map("shopify_id")
+  emailHash    String    @map("email_hash")
+  ordersCount  Int       @default(0) @map("orders_count")
+  totalSpent   Decimal   @default(0) @map("total_spent") @db.Decimal(12, 2)
+  firstOrderAt DateTime? @map("first_order_at")
+  lastOrderAt  DateTime? @map("last_order_at")
+  tags         String[]
+  createdAt    DateTime  @map("created_at")
+  syncedAt     DateTime  @default(now()) @map("synced_at")
+
+  orders FactOrder[]
+
+  @@index([emailHash])
+  @@index([lastOrderAt])
+  @@map("dim_customers")
+}
+
+// ============================================================
+// FACT TABLES
+// ============================================================
+
+model FactOrder {
+  id                String    @id @default(cuid())
+  shopifyId         String    @unique @map("shopify_id")
+  orderNumber       Int       @map("order_number")
+  customerId        String?   @map("customer_id")
+  orderDate         DateTime  @map("order_date")
+  financialStatus   String    @map("financial_status")
+  fulfillmentStatus String?   @map("fulfillment_status")
+  totalPrice        Decimal   @map("total_price") @db.Decimal(12, 2)
+  subtotalPrice     Decimal   @map("subtotal_price") @db.Decimal(12, 2)
+  totalDiscount     Decimal   @default(0) @map("total_discount") @db.Decimal(12, 2)
+  totalTax          Decimal   @default(0) @map("total_tax") @db.Decimal(12, 2)
+  totalRefund       Decimal   @default(0) @map("total_refund") @db.Decimal(12, 2)
+  currency          String    @default("USD")
+  itemCount         Int       @map("item_count")
+  landingSite       String?   @map("landing_site")
+  referringSite     String?   @map("referring_site")
+  sourceName        String?   @map("source_name")
+  tags              String[]
+  cancelledAt       DateTime? @map("cancelled_at")
+  createdAt         DateTime  @map("created_at")
+  syncedAt          DateTime  @default(now()) @map("synced_at")
+
+  customer DimCustomer?  @relation(fields: [customerId], references: [id])
+  items    FactOrderItem[]
+
+  @@index([orderDate])
+  @@index([financialStatus])
+  @@index([customerId])
+  @@index([orderDate, financialStatus])
+  @@map("fact_orders")
+}
+
+model FactOrderItem {
+  id            String  @id @default(cuid())
+  orderId       String  @map("order_id")
+  productId     String? @map("product_id")
+  variantId     String? @map("variant_id")
+  title         String
+  variantTitle  String? @map("variant_title")
+  quantity      Int
+  price         Decimal @db.Decimal(10, 2)
+  totalDiscount Decimal @default(0) @map("total_discount") @db.Decimal(10, 2)
+  vendor        String?
+  sku           String?
+
+  order   FactOrder   @relation(fields: [orderId], references: [id])
+  product DimProduct? @relation(fields: [productId], references: [id])
+  variant DimVariant? @relation(fields: [variantId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([variantId])
+  @@map("fact_order_items")
+}
+
+model FactGa4Daily {
+  id              String   @id @default(cuid())
+  date            DateTime @db.Date
+  channelGroup    String   @map("channel_group")
+  sourceMedium    String?  @map("source_medium")
+  campaignName    String?  @map("campaign_name")
+  sessions        Int      @default(0)
+  users           Int      @default(0)
+  newUsers        Int      @default(0) @map("new_users")
+  engagedSessions Int      @default(0) @map("engaged_sessions")
+  purchaseEvents  Int      @default(0) @map("purchase_events")
+  purchaseRevenue Decimal  @default(0) @map("purchase_revenue") @db.Decimal(12, 2)
+  syncedAt        DateTime @default(now()) @map("synced_at")
+
+  @@unique([date, channelGroup, sourceMedium, campaignName])
+  @@index([date])
+  @@map("fact_ga4_daily")
+}
+
+// ============================================================
+// APPLICATION TABLES
+// ============================================================
+
+model Alert {
+  id               String    @id @default(cuid())
+  ruleType         String    @map("rule_type")
+  severity         String    @default("warning")
+  title            String
+  message          String
+  metricValue      Decimal?  @map("metric_value") @db.Decimal(12, 2)
+  thresholdValue   Decimal?  @map("threshold_value") @db.Decimal(12, 2)
+  comparisonPeriod String?   @map("comparison_period")
+  status           String    @default("active")
+  notifiedAt       DateTime? @map("notified_at")
+  acknowledgedAt   DateTime? @map("acknowledged_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([ruleType])
+  @@map("alerts")
+}
+
+model AlertRule {
+  id               String   @id @default(cuid())
+  ruleType         String   @map("rule_type")
+  metric           String
+  operator         String
+  thresholdPct     Decimal  @map("threshold_pct") @db.Decimal(5, 2)
+  comparisonPeriod String   @map("comparison_period")
+  enabled          Boolean  @default(true)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("alert_rules")
+}
+
+model ForecastDaily {
+  id             String   @id @default(cuid())
+  date           DateTime @db.Date
+  metric         String
+  predictedValue Decimal  @map("predicted_value") @db.Decimal(12, 2)
+  actualValue    Decimal? @map("actual_value") @db.Decimal(12, 2)
+  movingAvg7d    Decimal? @map("moving_avg_7d") @db.Decimal(12, 2)
+  yoyAdjustment  Decimal? @map("yoy_adjustment") @db.Decimal(8, 4)
+  deviationPct   Decimal? @map("deviation_pct") @db.Decimal(8, 4)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@unique([date, metric])
+  @@index([date])
+  @@map("forecast_daily")
+}
+
+model SyncLog {
+  id               String    @id @default(cuid())
+  source           String
+  syncType         String    @map("sync_type")
+  status           String    @default("running")
+  recordsProcessed Int       @default(0) @map("records_processed")
+  errorMessage     String?   @map("error_message")
+  startedAt        DateTime  @default(now()) @map("started_at")
+  completedAt      DateTime? @map("completed_at")
+  cursor           String?
+
+  @@index([source, status])
+  @@index([startedAt])
+  @@map("sync_log")
+}
+
+// ============================================================
+// NEXTAUTH TABLES
+// ============================================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime? @map("email_verified")
+  image         String?
+
+  accounts Account[]
+  sessions Session[]
+
+  @@map("users")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
