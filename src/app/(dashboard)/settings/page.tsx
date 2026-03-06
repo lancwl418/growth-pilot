@@ -51,11 +51,13 @@ export default function SettingsPage() {
     async (source: string) => {
       setSyncing((prev) => ({ ...prev, [source]: true }));
       try {
-        await fetch(`/api/sync/shopify/${source}`, {
+        const url = source === "ga4"
+          ? "/api/sync/ga4"
+          : `/api/sync/shopify/${source}`;
+        await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
         });
-        // Wait a bit then refresh
         setTimeout(() => {
           refresh();
           setSyncing((prev) => ({ ...prev, [source]: false }));
@@ -160,6 +162,18 @@ export default function SettingsPage() {
                 <RefreshCw className="mr-2 h-4 w-4" />
               )}
               Sync Orders
+            </Button>
+            <Button
+              variant="outline"
+              disabled={syncing.ga4}
+              onClick={() => triggerSync("ga4")}
+            >
+              {syncing.ga4 ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="mr-2 h-4 w-4" />
+              )}
+              Sync GA4 Traffic
             </Button>
           </div>
         </CardContent>

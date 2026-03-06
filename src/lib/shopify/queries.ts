@@ -1,6 +1,6 @@
 export const PRODUCTS_QUERY = `
-  query Products($first: Int!, $after: String) {
-    products(first: $first, after: $after) {
+  query Products($first: Int!, $after: String, $query: String) {
+    products(first: $first, after: $after, query: $query) {
       edges {
         cursor
         node {
@@ -35,15 +35,15 @@ export const PRODUCTS_QUERY = `
 `;
 
 export const CUSTOMERS_QUERY = `
-  query Customers($first: Int!, $after: String) {
-    customers(first: $first, after: $after) {
+  query Customers($first: Int!, $after: String, $query: String) {
+    customers(first: $first, after: $after, query: $query) {
       edges {
         cursor
         node {
           id
           email
-          ordersCount
-          totalSpentV2 {
+          numberOfOrders
+          amountSpent {
             amount
           }
           tags
@@ -66,7 +66,6 @@ export const ORDERS_QUERY = `
         node {
           id
           name
-          orderNumber
           createdAt
           totalPriceSet {
             shopMoney {
@@ -93,8 +92,6 @@ export const ORDERS_QUERY = `
           displayFulfillmentStatus
           cancelledAt
           tags
-          landingSite
-          referringSite
           sourceName
           customer {
             id

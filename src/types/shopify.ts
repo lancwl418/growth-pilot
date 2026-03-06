@@ -35,8 +35,8 @@ export interface ShopifyVariant {
 export interface ShopifyCustomer {
   id: string;
   email: string | null;
-  ordersCount: string;
-  totalSpentV2: { amount: string };
+  numberOfOrders: number;
+  amountSpent: { amount: string };
   tags: string[];
   createdAt: string;
 }
@@ -44,7 +44,6 @@ export interface ShopifyCustomer {
 export interface ShopifyOrder {
   id: string;
   name: string;
-  orderNumber: number;
   createdAt: string;
   totalPriceSet: { shopMoney: { amount: string; currencyCode: string } };
   subtotalPriceSet: { shopMoney: { amount: string } };
@@ -54,8 +53,6 @@ export interface ShopifyOrder {
   displayFulfillmentStatus: string;
   cancelledAt: string | null;
   tags: string[];
-  landingSite: string | null;
-  referringSite: string | null;
   sourceName: string;
   customer: { id: string; email: string | null } | null;
   lineItems: ShopifyConnection<ShopifyLineItem>;

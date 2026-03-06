@@ -7,18 +7,23 @@ interface ProductsResponse {
   products: ShopifyConnection<ShopifyProduct>;
 }
 
-export async function syncProducts(): Promise<number> {
+export async function syncProducts(options?: { updatedSince?: Date }): Promise<number> {
   let hasNextPage = true;
   let cursor: string | null = null;
   let total = 0;
 
+  const syncType = options?.updatedSince ? "incremental" : "full";
+  const queryFilter = options?.updatedSince
+    ? `updated_at:>'${options.updatedSince.toISOString()}'`
+    : undefined;
+
   const syncLog = await prisma.syncLog.create({
-    data: { source: "shopify_products", syncType: "full", status: "running" },
+    data: { source: "shopify_products", syncType, status: "running" },
   });
 
   try {
     while (hasNextPage) {
-      const variables: Record<string, unknown> = { first: 50, after: cursor };
+      const variables: Record<string, unknown> = { first: 50, after: cursor, query: queryFilter };
       const data = await shopifyGraphQL<ProductsResponse>(PRODUCTS_QUERY, variables);
 
       for (const edge of data.products.edges) {

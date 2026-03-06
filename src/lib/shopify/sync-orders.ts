@@ -103,7 +103,7 @@ export async function upsertOrder(order: ShopifyOrder) {
     where: { shopifyId },
     create: {
       shopifyId,
-      orderNumber: order.orderNumber,
+      orderNumber: parseInt(order.name.replace(/\D/g, ""), 10) || 0,
       customerId,
       orderDate: new Date(order.createdAt),
       financialStatus,
@@ -115,8 +115,6 @@ export async function upsertOrder(order: ShopifyOrder) {
       totalRefund,
       currency: order.totalPriceSet.shopMoney.currencyCode,
       itemCount: lineItems.reduce((sum, li) => sum + li.quantity, 0),
-      landingSite: order.landingSite,
-      referringSite: order.referringSite,
       sourceName: order.sourceName,
       tags: order.tags,
       cancelledAt: order.cancelledAt ? new Date(order.cancelledAt) : null,

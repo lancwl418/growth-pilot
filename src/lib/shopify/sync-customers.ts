@@ -8,18 +8,23 @@ interface CustomersResponse {
   customers: ShopifyConnection<ShopifyCustomer>;
 }
 
-export async function syncCustomers(): Promise<number> {
+export async function syncCustomers(options?: { updatedSince?: Date }): Promise<number> {
   let hasNextPage = true;
   let cursor: string | null = null;
   let total = 0;
 
+  const syncType = options?.updatedSince ? "incremental" : "full";
+  const queryFilter = options?.updatedSince
+    ? `updated_at:>'${options.updatedSince.toISOString()}'`
+    : undefined;
+
   const syncLog = await prisma.syncLog.create({
-    data: { source: "shopify_customers", syncType: "full", status: "running" },
+    data: { source: "shopify_customers", syncType, status: "running" },
   });
 
   try {
     while (hasNextPage) {
-      const variables: Record<string, unknown> = { first: 50, after: cursor };
+      const variables: Record<string, unknown> = { first: 50, after: cursor, query: queryFilter };
       const data = await shopifyGraphQL<CustomersResponse>(CUSTOMERS_QUERY, variables);
 
       for (const edge of data.customers.edges) {
@@ -32,15 +37,15 @@ export async function syncCustomers(): Promise<number> {
           create: {
             shopifyId,
             emailHash,
-            ordersCount: parseInt(customer.ordersCount, 10) || 0,
-            totalSpent: parseFloat(customer.totalSpentV2.amount) || 0,
+            ordersCount: typeof customer.numberOfOrders === "string" ? parseInt(customer.numberOfOrders, 10) : (customer.numberOfOrders || 0),
+            totalSpent: parseFloat(customer.amountSpent.amount) || 0,
             tags: customer.tags,
             createdAt: new Date(customer.createdAt),
           },
           update: {
             emailHash,
-            ordersCount: parseInt(customer.ordersCount, 10) || 0,
-            totalSpent: parseFloat(customer.totalSpentV2.amount) || 0,
+            ordersCount: typeof customer.numberOfOrders === "string" ? parseInt(customer.numberOfOrders, 10) : (customer.numberOfOrders || 0),
+            totalSpent: parseFloat(customer.amountSpent.amount) || 0,
             tags: customer.tags,
             syncedAt: new Date(),
           },

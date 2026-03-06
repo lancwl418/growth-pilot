@@ -7,21 +7,16 @@ import { KpiCard } from "@/components/dashboard/kpi-card";
 import { KpiGrid } from "@/components/dashboard/kpi-grid";
 import { DashboardLineChart } from "@/components/charts/line-chart";
 import { DashboardDonutChart } from "@/components/charts/donut-chart";
-import { DataTable, type Column } from "@/components/tables/data-table";
+import { DashboardBarChart } from "@/components/charts/bar-chart";
 import { useDateRange } from "@/hooks/use-date-range";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
-import { Globe, Users, MousePointerClick } from "lucide-react";
+import { formatCurrency } from "@/lib/utils/currency";
+import { Globe, Users, MousePointerClick, TrendingUp, DollarSign, UserPlus } from "lucide-react";
 import type { TrafficMetrics } from "@/types/dashboard";
 
 const CHANNEL_COLORS = [
   "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6",
   "#ec4899", "#06b6d4", "#84cc16", "#f97316", "#6366f1",
-];
-
-const sourceColumns: Column<Record<string, unknown>>[] = [
-  { key: "source", label: "Source / Medium", sortable: true },
-  { key: "sessions", label: "Sessions", sortable: true, align: "right" },
-  { key: "users", label: "Users", sortable: true, align: "right" },
 ];
 
 export default function TrafficPage() {
@@ -41,19 +36,15 @@ export default function TrafficPage() {
         <Card>
           <CardContent className="p-12 text-center">
             <Globe className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-lg font-medium mb-2">GA4 Not Configured</h2>
+            <h2 className="text-lg font-medium mb-2">No Traffic Data Yet</h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              To see traffic data, configure your GA4 API credentials in the environment variables
-              (GA4_PROPERTY_ID and GA4_CREDENTIALS_JSON).
+              Go to <strong>Settings</strong> and click <strong>Sync GA4 Traffic</strong> to pull in your Google Analytics data. First sync will backfill the last 90 days.
             </p>
           </CardContent>
         </Card>
       </div>
     );
   }
-
-  const totalSessions = data?.timeSeries.reduce((s, d) => s + d.sessions, 0) || 0;
-  const totalUsers = data?.timeSeries.reduce((s, d) => s + d.users, 0) || 0;
 
   return (
     <div>
@@ -66,22 +57,34 @@ export default function TrafficPage() {
         <MetricSkeletonGrid />
       ) : (
         <>
+          {/* KPI row — the numbers a boss looks at first */}
           <KpiGrid className="mb-6">
             <KpiCard
               title="Sessions"
-              value={totalSessions.toLocaleString()}
+              value={data.totals.sessions.toLocaleString()}
               icon={<MousePointerClick className="h-4 w-4" />}
             />
             <KpiCard
-              title="Users"
-              value={totalUsers.toLocaleString()}
-              icon={<Users className="h-4 w-4" />}
+              title="Conversion Rate"
+              value={`${data.totals.conversionRate.toFixed(2)}%`}
+              icon={<TrendingUp className="h-4 w-4" />}
+            />
+            <KpiCard
+              title="Ad Spend"
+              value={formatCurrency(data.totals.adSpend)}
+              icon={<DollarSign className="h-4 w-4" />}
+            />
+            <KpiCard
+              title="ROAS"
+              value={data.totals.adSpend > 0 ? `${data.totals.roas.toFixed(2)}x` : "N/A"}
+              icon={<TrendingUp className="h-4 w-4" />}
             />
           </KpiGrid>
 
+          {/* Traffic trend — is it growing or shrinking? */}
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle className="text-lg">Sessions Over Time</CardTitle>
+              <CardTitle className="text-lg">Traffic Trend</CardTitle>
             </CardHeader>
             <CardContent>
               <DashboardLineChart
@@ -97,13 +100,14 @@ export default function TrafficPage() {
           </Card>
 
           <div className="grid gap-6 md:grid-cols-2 mb-6">
+            {/* Channel split — where is traffic coming from? */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Channel Mix</CardTitle>
+                <CardTitle className="text-lg">Where Traffic Comes From</CardTitle>
               </CardHeader>
               <CardContent>
                 <DashboardDonutChart
-                  data={data.channelMix.map((c, i) => ({
+                  data={data.channelMix.slice(0, 8).map((c, i) => ({
                     name: c.channel,
                     value: c.sessions,
                     color: CHANNEL_COLORS[i % CHANNEL_COLORS.length],
@@ -111,19 +115,79 @@ export default function TrafficPage() {
                 />
               </CardContent>
             </Card>
+
+            {/* Channel revenue — which channels make money? */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Top Sources</CardTitle>
+                <CardTitle className="text-lg">Revenue by Channel</CardTitle>
               </CardHeader>
               <CardContent>
-                <DataTable
-                  data={data.topSources as unknown as Record<string, unknown>[]}
-                  columns={sourceColumns}
-                  pageSize={8}
+                <DashboardBarChart
+                  data={data.channelPerformance
+                    .filter((c) => c.revenue > 0)
+                    .sort((a, b) => b.revenue - a.revenue)
+                    .slice(0, 8)
+                    .map((c) => ({
+                      channel: c.channel.length > 15 ? c.channel.slice(0, 15) + "..." : c.channel,
+                      revenue: c.revenue,
+                    }))}
+                  xKey="channel"
+                  bars={[{ key: "revenue", label: "Revenue", color: "#10b981" }]}
+                  formatY={(v) => `$${(v / 1000).toFixed(0)}K`}
+                  height={250}
                 />
               </CardContent>
             </Card>
           </div>
+
+          {/* Channel performance table — the detail view */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Channel Performance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-muted-foreground">
+                      <th className="text-left py-3 px-2 font-medium">Channel</th>
+                      <th className="text-right py-3 px-2 font-medium">Sessions</th>
+                      <th className="text-right py-3 px-2 font-medium">Conv. Rate</th>
+                      <th className="text-right py-3 px-2 font-medium">Revenue</th>
+                      <th className="text-right py-3 px-2 font-medium">Ad Spend</th>
+                      <th className="text-right py-3 px-2 font-medium">ROAS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.channelPerformance.map((ch) => (
+                      <tr key={ch.channel} className="border-b last:border-0 hover:bg-gray-50">
+                        <td className="py-2.5 px-2 font-medium">{ch.channel}</td>
+                        <td className="py-2.5 px-2 text-right">{ch.sessions.toLocaleString()}</td>
+                        <td className="py-2.5 px-2 text-right">
+                          <span className={ch.conversionRate >= 2 ? "text-green-600 font-medium" : ""}>
+                            {ch.conversionRate.toFixed(2)}%
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-2 text-right font-medium">
+                          {formatCurrency(ch.revenue)}
+                        </td>
+                        <td className="py-2.5 px-2 text-right">
+                          {ch.adSpend > 0 ? formatCurrency(ch.adSpend) : "—"}
+                        </td>
+                        <td className="py-2.5 px-2 text-right">
+                          {ch.adSpend > 0 ? (
+                            <span className={ch.roas >= 3 ? "text-green-600 font-medium" : ch.roas < 1 ? "text-red-500 font-medium" : ""}>
+                              {ch.roas.toFixed(2)}x
+                            </span>
+                          ) : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
         </>
       )}
     </div>

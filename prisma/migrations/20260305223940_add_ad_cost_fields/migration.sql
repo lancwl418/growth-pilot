@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "fact_ga4_daily" ADD COLUMN     "ad_clicks" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "ad_cost" DECIMAL(12,2) NOT NULL DEFAULT 0,
+ADD COLUMN     "ad_impressions" INTEGER NOT NULL DEFAULT 0;

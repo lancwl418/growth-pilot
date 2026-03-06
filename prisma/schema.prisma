@@ -136,6 +136,9 @@ model FactGa4Daily {
   engagedSessions Int      @default(0) @map("engaged_sessions")
   purchaseEvents  Int      @default(0) @map("purchase_events")
   purchaseRevenue Decimal  @default(0) @map("purchase_revenue") @db.Decimal(12, 2)
+  adCost          Decimal  @default(0) @map("ad_cost") @db.Decimal(12, 2)
+  adClicks        Int      @default(0) @map("ad_clicks")
+  adImpressions   Int      @default(0) @map("ad_impressions")
   syncedAt        DateTime @default(now()) @map("synced_at")
 
   @@unique([date, channelGroup, sourceMedium, campaignName])

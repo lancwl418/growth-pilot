@@ -7,9 +7,41 @@ export async function getTrafficMetrics(
   startDate: string,
   endDate: string
 ): Promise<TrafficMetrics | null> {
-  // Check if we have any GA4 data
   const count = await prisma.factGa4Daily.count();
   if (count === 0) return null;
+
+  const where = ga4DateFilter(startDate, endDate);
+
+  // Totals
+  const totalsAgg = await prisma.factGa4Daily.aggregate({
+    where,
+    _sum: {
+      sessions: true,
+      users: true,
+      newUsers: true,
+      engagedSessions: true,
+      purchaseEvents: true,
+      purchaseRevenue: true,
+      adCost: true,
+    },
+  });
+
+  const totalSessions = totalsAgg._sum.sessions || 0;
+  const totalEngaged = totalsAgg._sum.engagedSessions || 0;
+  const totalPurchases = totalsAgg._sum.purchaseEvents || 0;
+  const totalRevenue = Number(totalsAgg._sum.purchaseRevenue || 0);
+  const totalAdSpend = Number(totalsAgg._sum.adCost || 0);
+
+  const totals = {
+    sessions: totalSessions,
+    users: totalsAgg._sum.users || 0,
+    newUsers: totalsAgg._sum.newUsers || 0,
+    engagementRate: totalSessions > 0 ? (totalEngaged / totalSessions) * 100 : 0,
+    conversionRate: totalSessions > 0 ? (totalPurchases / totalSessions) * 100 : 0,
+    revenue: totalRevenue,
+    adSpend: totalAdSpend,
+    roas: totalAdSpend > 0 ? totalRevenue / totalAdSpend : 0,
+  };
 
   // Daily time series
   const days = eachDayOfInterval({
@@ -19,7 +51,7 @@ export async function getTrafficMetrics(
 
   const dailyAgg = await prisma.factGa4Daily.groupBy({
     by: ["date"],
-    where: ga4DateFilter(startDate, endDate),
+    where,
     _sum: { sessions: true, users: true },
   });
 
@@ -39,15 +71,13 @@ export async function getTrafficMetrics(
     };
   });
 
-  // Channel mix
+  // Channel mix (for donut chart)
   const channelAgg = await prisma.factGa4Daily.groupBy({
     by: ["channelGroup"],
-    where: ga4DateFilter(startDate, endDate),
-    _sum: { sessions: true },
+    where,
+    _sum: { sessions: true, users: true, engagedSessions: true, purchaseEvents: true, purchaseRevenue: true, adCost: true },
     orderBy: { _sum: { sessions: "desc" } },
   });
-
-  const totalSessions = channelAgg.reduce((s, c) => s + (c._sum.sessions || 0), 0);
 
   const channelMix = channelAgg.map((c) => ({
     channel: c.channelGroup,
@@ -55,13 +85,29 @@ export async function getTrafficMetrics(
     percentage: totalSessions > 0 ? ((c._sum.sessions || 0) / totalSessions) * 100 : 0,
   }));
 
+  // Channel performance (for table — boss wants to see which channels convert)
+  const channelPerformance = channelAgg.map((c) => {
+    const chSessions = c._sum.sessions || 0;
+    const chEngaged = c._sum.engagedSessions || 0;
+    const chPurchases = c._sum.purchaseEvents || 0;
+    const chRevenue = Number(c._sum.purchaseRevenue || 0);
+    const chAdSpend = Number(c._sum.adCost || 0);
+    return {
+      channel: c.channelGroup,
+      sessions: chSessions,
+      users: c._sum.users || 0,
+      engagementRate: chSessions > 0 ? (chEngaged / chSessions) * 100 : 0,
+      conversionRate: chSessions > 0 ? (chPurchases / chSessions) * 100 : 0,
+      revenue: chRevenue,
+      adSpend: chAdSpend,
+      roas: chAdSpend > 0 ? chRevenue / chAdSpend : 0,
+    };
+  });
+
   // Top sources
   const sourceAgg = await prisma.factGa4Daily.groupBy({
     by: ["sourceMedium"],
-    where: {
-      ...ga4DateFilter(startDate, endDate),
-      sourceMedium: { not: null },
-    },
+    where: { ...where, sourceMedium: { not: null } },
     _sum: { sessions: true, users: true },
     orderBy: { _sum: { sessions: "desc" } },
     take: 20,
@@ -73,5 +119,5 @@ export async function getTrafficMetrics(
     users: s._sum.users || 0,
   }));
 
-  return { timeSeries, channelMix, topSources };
+  return { totals, timeSeries, channelMix, channelPerformance, topSources };
 }

@@ -53,8 +53,7 @@ export async function POST(request: NextRequest) {
 function mapRestToGraphQL(rest: any) {
   return {
     id: `gid://shopify/Order/${rest.id}`,
-    name: rest.name,
-    orderNumber: rest.order_number,
+    name: rest.name || `#${rest.order_number}`,
     createdAt: rest.created_at,
     totalPriceSet: { shopMoney: { amount: rest.total_price, currencyCode: rest.currency } },
     subtotalPriceSet: { shopMoney: { amount: rest.subtotal_price } },
@@ -64,8 +63,6 @@ function mapRestToGraphQL(rest: any) {
     displayFulfillmentStatus: rest.fulfillment_status,
     cancelledAt: rest.cancelled_at,
     tags: rest.tags ? rest.tags.split(", ") : [],
-    landingSite: rest.landing_site,
-    referringSite: rest.referring_site,
     sourceName: rest.source_name,
     customer: rest.customer
       ? { id: `gid://shopify/Customer/${rest.customer.id}`, email: rest.customer.email }

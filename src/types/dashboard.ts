@@ -33,8 +33,28 @@ export interface SalesMetrics {
 }
 
 export interface TrafficMetrics {
+  totals: {
+    sessions: number;
+    users: number;
+    newUsers: number;
+    engagementRate: number;
+    conversionRate: number;
+    revenue: number;
+    adSpend: number;
+    roas: number;
+  };
   timeSeries: { date: string; sessions: number; users: number }[];
   channelMix: { channel: string; sessions: number; percentage: number }[];
+  channelPerformance: {
+    channel: string;
+    sessions: number;
+    users: number;
+    engagementRate: number;
+    conversionRate: number;
+    revenue: number;
+    adSpend: number;
+    roas: number;
+  }[];
   topSources: { source: string; sessions: number; users: number }[];
 }
 
