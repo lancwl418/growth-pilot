@@ -3,19 +3,36 @@
 import { DataTable, type Column } from "./data-table";
 import { formatCurrency } from "@/lib/utils/currency";
 import { format } from "date-fns";
+import { ExternalLink } from "lucide-react";
 
 interface CustomerRow {
   id: string;
+  shopifyId: string;
+  name: string;
   ordersCount: number;
   totalSpent: number;
+  avgOrderValue: number;
+  avgDaysBetweenOrders: number | null;
   lastOrderAt: string | null;
 }
 
+const SHOPIFY_ADMIN_URL = "https://admin.shopify.com/store/ideamax/customers";
+
 const columns: Column<CustomerRow>[] = [
   {
-    key: "id",
-    label: "Customer ID",
-    render: (row) => row.id.slice(0, 8) + "...",
+    key: "name",
+    label: "Customer",
+    render: (row) => (
+      <a
+        href={`${SHOPIFY_ADMIN_URL}/${row.shopifyId}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline"
+      >
+        {row.name}
+        <ExternalLink className="h-3 w-3" />
+      </a>
+    ),
   },
   {
     key: "ordersCount",
@@ -29,6 +46,21 @@ const columns: Column<CustomerRow>[] = [
     sortable: true,
     align: "right",
     render: (row) => formatCurrency(row.totalSpent),
+  },
+  {
+    key: "avgOrderValue",
+    label: "Avg Order",
+    sortable: true,
+    align: "right",
+    render: (row) => formatCurrency(row.avgOrderValue),
+  },
+  {
+    key: "avgDaysBetweenOrders",
+    label: "Avg Interval",
+    sortable: true,
+    align: "right",
+    render: (row) =>
+      row.avgDaysBetweenOrders !== null ? `${row.avgDaysBetweenOrders}d` : "—",
   },
   {
     key: "lastOrderAt",

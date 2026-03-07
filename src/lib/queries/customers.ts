@@ -68,11 +68,42 @@ export async function getCustomerMetrics(
     take: 20,
     select: {
       id: true,
+      shopifyId: true,
+      firstName: true,
+      lastName: true,
       ordersCount: true,
       totalSpent: true,
       lastOrderAt: true,
     },
   });
+
+  // Fetch actual order dates for top customers to calculate real intervals
+  const topCustomerIds = topCustomers.map((c) => c.id);
+  const customerOrders = await prisma.factOrder.findMany({
+    where: {
+      customerId: { in: topCustomerIds },
+      financialStatus: { in: ["paid", "partially_refunded"] },
+      cancelledAt: null,
+    },
+    select: { customerId: true, orderDate: true, totalPrice: true },
+    orderBy: { orderDate: "asc" },
+  });
+
+  // Group orders by customer, compute avg interval and avg order value from real data
+  const customerOrderMap = new Map<string, { dates: Date[]; totalSpent: number }>();
+  for (const o of customerOrders) {
+    if (!o.customerId) continue;
+    const entry = customerOrderMap.get(o.customerId);
+    if (entry) {
+      entry.dates.push(o.orderDate);
+      entry.totalSpent += Number(o.totalPrice);
+    } else {
+      customerOrderMap.set(o.customerId, {
+        dates: [o.orderDate],
+        totalSpent: Number(o.totalPrice),
+      });
+    }
+  }
 
   return {
     newVsReturning: {
@@ -82,12 +113,33 @@ export async function getCustomerMetrics(
       returningRevenue,
     },
     repeatRate,
-    topCustomers: topCustomers.map((c) => ({
-      id: c.id,
-      ordersCount: c.ordersCount,
-      totalSpent: Number(c.totalSpent),
-      lastOrderAt: c.lastOrderAt?.toISOString() || null,
-    })),
+    topCustomers: topCustomers.map((c) => {
+      const orderData = customerOrderMap.get(c.id);
+      const actualOrders = orderData?.dates.length || 0;
+      const actualSpent = orderData?.totalSpent || Number(c.totalSpent);
+      const avgOrderValue = actualOrders > 0 ? actualSpent / actualOrders : 0;
+
+      let avgDaysBetweenOrders: number | null = null;
+      if (orderData && orderData.dates.length > 1) {
+        const dates = orderData.dates;
+        let totalDays = 0;
+        for (let i = 1; i < dates.length; i++) {
+          totalDays += (dates[i].getTime() - dates[i - 1].getTime()) / (1000 * 60 * 60 * 24);
+        }
+        avgDaysBetweenOrders = Math.round(totalDays / (dates.length - 1));
+      }
+
+      return {
+        id: c.id,
+        shopifyId: c.shopifyId,
+        name: [c.firstName, c.lastName].filter(Boolean).join(" ") || "Unknown",
+        ordersCount: actualOrders,
+        totalSpent: actualSpent,
+        avgOrderValue,
+        avgDaysBetweenOrders,
+        lastOrderAt: c.lastOrderAt?.toISOString() || null,
+      };
+    }),
   };
 }
 

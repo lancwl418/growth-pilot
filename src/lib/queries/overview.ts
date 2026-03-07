@@ -82,12 +82,18 @@ export async function getOverviewMetrics(
     _count: true,
   });
 
-  const dailyMap = new Map(
-    dailyOrders.map((d) => [
-      format(d.orderDate, "yyyy-MM-dd"),
-      { revenue: Number(d._sum.totalPrice || 0), orders: d._count },
-    ])
-  );
+  const dailyMap = new Map<string, { revenue: number; orders: number }>();
+  for (const d of dailyOrders) {
+    const key = format(d.orderDate, "yyyy-MM-dd");
+    const existing = dailyMap.get(key);
+    const revenue = Number(d._sum.totalPrice || 0);
+    if (existing) {
+      existing.revenue += revenue;
+      existing.orders += d._count;
+    } else {
+      dailyMap.set(key, { revenue, orders: d._count });
+    }
+  }
 
   const revenueSparkline = days.map(
     (d) => dailyMap.get(format(d, "yyyy-MM-dd"))?.revenue || 0

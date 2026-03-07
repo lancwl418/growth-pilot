@@ -7,6 +7,16 @@ export async function getSalesMetrics(
   startDate: string,
   endDate: string
 ): Promise<SalesMetrics> {
+  // Totals via aggregate (accurate, not affected by DateTime grouping)
+  const orderAgg = await prisma.factOrder.aggregate({
+    where: paidOrderFilter(startDate, endDate),
+    _sum: { totalPrice: true },
+    _count: true,
+  });
+
+  const totalRevenue = Number(orderAgg._sum.totalPrice || 0);
+  const totalOrders = orderAgg._count;
+
   // Daily time series
   const days = eachDayOfInterval({
     start: new Date(`${startDate}T00:00:00.000Z`),
@@ -20,12 +30,19 @@ export async function getSalesMetrics(
     _count: true,
   });
 
-  const dailyMap = new Map(
-    dailyOrders.map((d) => [
-      format(d.orderDate, "yyyy-MM-dd"),
-      { revenue: Number(d._sum.totalPrice || 0), orders: d._count },
-    ])
-  );
+  // Accumulate into daily buckets (orderDate is DateTime, multiple per day)
+  const dailyMap = new Map<string, { revenue: number; orders: number }>();
+  for (const d of dailyOrders) {
+    const key = format(d.orderDate, "yyyy-MM-dd");
+    const existing = dailyMap.get(key);
+    const revenue = Number(d._sum.totalPrice || 0);
+    if (existing) {
+      existing.revenue += revenue;
+      existing.orders += d._count;
+    } else {
+      dailyMap.set(key, { revenue, orders: d._count });
+    }
+  }
 
   const timeSeries = days.map((d) => {
     const key = format(d, "yyyy-MM-dd");
@@ -80,5 +97,5 @@ export async function getSalesMetrics(
       totalOrdersInPeriod > 0 ? (refundAgg._count / totalOrdersInPeriod) * 100 : 0,
   };
 
-  return { timeSeries, channelBreakdown, refundSummary };
+  return { totalRevenue, totalOrders, timeSeries, channelBreakdown, refundSummary };
 }

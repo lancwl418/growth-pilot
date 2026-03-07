@@ -21,8 +21,8 @@ export default function SalesPage() {
     queryParams
   );
 
-  const totalRevenue = data?.timeSeries.reduce((s, d) => s + d.revenue, 0) || 0;
-  const totalOrders = data?.timeSeries.reduce((s, d) => s + d.orders, 0) || 0;
+  const totalRevenue = data?.totalRevenue || 0;
+  const totalOrders = data?.totalOrders || 0;
 
   return (
     <div>

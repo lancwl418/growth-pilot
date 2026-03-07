@@ -48,6 +48,8 @@ model DimVariant {
 model DimCustomer {
   id           String    @id @default(cuid())
   shopifyId    String    @unique @map("shopify_id")
+  firstName    String?   @map("first_name")
+  lastName     String?   @map("last_name")
   emailHash    String    @map("email_hash")
   ordersCount  Int       @default(0) @map("orders_count")
   totalSpent   Decimal   @default(0) @map("total_spent") @db.Decimal(12, 2)

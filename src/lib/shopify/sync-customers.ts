@@ -36,6 +36,8 @@ export async function syncCustomers(options?: { updatedSince?: Date }): Promise<
           where: { shopifyId },
           create: {
             shopifyId,
+            firstName: customer.firstName,
+            lastName: customer.lastName,
             emailHash,
             ordersCount: typeof customer.numberOfOrders === "string" ? parseInt(customer.numberOfOrders, 10) : (customer.numberOfOrders || 0),
             totalSpent: parseFloat(customer.amountSpent.amount) || 0,
@@ -43,6 +45,8 @@ export async function syncCustomers(options?: { updatedSince?: Date }): Promise<
             createdAt: new Date(customer.createdAt),
           },
           update: {
+            firstName: customer.firstName,
+            lastName: customer.lastName,
             emailHash,
             ordersCount: typeof customer.numberOfOrders === "string" ? parseInt(customer.numberOfOrders, 10) : (customer.numberOfOrders || 0),
             totalSpent: parseFloat(customer.amountSpent.amount) || 0,

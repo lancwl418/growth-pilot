@@ -41,6 +41,8 @@ export const CUSTOMERS_QUERY = `
         cursor
         node {
           id
+          firstName
+          lastName
           email
           numberOfOrders
           amountSpent {

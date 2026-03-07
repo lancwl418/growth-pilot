@@ -34,6 +34,8 @@ export interface ShopifyVariant {
 
 export interface ShopifyCustomer {
   id: string;
+  firstName: string | null;
+  lastName: string | null;
   email: string | null;
   numberOfOrders: number;
   amountSpent: { amount: string };

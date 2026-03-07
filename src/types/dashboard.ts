@@ -23,6 +23,8 @@ export interface TimeSeriesPoint {
 }
 
 export interface SalesMetrics {
+  totalRevenue: number;
+  totalOrders: number;
   timeSeries: { date: string; revenue: number; orders: number }[];
   channelBreakdown: { channel: string; revenue: number; orders: number }[];
   refundSummary: {
@@ -86,8 +88,12 @@ export interface CustomerMetrics {
   };
   topCustomers: {
     id: string;
+    shopifyId: string;
+    name: string;
     ordersCount: number;
     totalSpent: number;
+    avgOrderValue: number;
+    avgDaysBetweenOrders: number | null;
     lastOrderAt: string | null;
   }[];
 }
