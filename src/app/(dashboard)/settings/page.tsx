@@ -53,6 +53,8 @@ export default function SettingsPage() {
       try {
         const url = source === "ga4"
           ? "/api/sync/ga4"
+          : source === "meta-ads"
+          ? "/api/sync/meta-ads"
           : `/api/sync/shopify/${source}`;
         await fetch(url, {
           method: "POST",
@@ -174,6 +176,18 @@ export default function SettingsPage() {
                 <RefreshCw className="mr-2 h-4 w-4" />
               )}
               Sync GA4 Traffic
+            </Button>
+            <Button
+              variant="outline"
+              disabled={syncing["meta-ads"]}
+              onClick={() => triggerSync("meta-ads")}
+            >
+              {syncing["meta-ads"] ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="mr-2 h-4 w-4" />
+              )}
+              Sync Meta Ads
             </Button>
           </div>
         </CardContent>

@@ -11,10 +11,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Menu, LogOut, Bell, RefreshCw } from "lucide-react";
+import { Menu, LogOut, Bell, RefreshCw, Languages } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { MobileNav } from "./mobile-nav";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
+import { useLanguage, useT } from "@/hooks/use-language";
 import { formatDistanceToNow } from "date-fns";
 
 interface StatusData {
@@ -26,6 +27,8 @@ export function Topbar() {
   const { data: session } = useSession();
   const user = session?.user;
   const { data: status } = useDashboardData<StatusData>("/api/dashboard/status");
+  const { locale, setLocale } = useLanguage();
+  const t = useT();
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-white px-4 md:px-6">
@@ -49,7 +52,7 @@ export function Topbar() {
             <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
               <RefreshCw className="h-3 w-3" />
               <span>
-                Synced{" "}
+                {t.common.synced}{" "}
                 {formatDistanceToNow(new Date(status.lastSync.completedAt), {
                   addSuffix: true,
                 })}
@@ -63,6 +66,22 @@ export function Topbar() {
           </TooltipContent>
         </Tooltip>
       )}
+
+      {/* Language toggle */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setLocale(locale === "en" ? "zh" : "en")}
+          >
+            <Languages className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{locale === "en" ? "切换中文" : "Switch to English"}</p>
+        </TooltipContent>
+      </Tooltip>
 
       {/* Alert badge */}
       <Tooltip>
@@ -81,8 +100,8 @@ export function Topbar() {
         <TooltipContent>
           <p>
             {status?.activeAlerts
-              ? `${status.activeAlerts} active alert${status.activeAlerts > 1 ? "s" : ""}`
-              : "No active alerts"}
+              ? t.alerts.activeCount(status.activeAlerts)
+              : t.alerts.noActiveAlerts}
           </p>
         </TooltipContent>
       </Tooltip>
@@ -108,7 +127,7 @@ export function Topbar() {
             </div>
             <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/login" })}>
               <LogOut className="mr-2 h-4 w-4" />
-              Sign out
+              {t.common.signOut}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

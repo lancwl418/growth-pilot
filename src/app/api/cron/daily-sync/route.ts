@@ -2,8 +2,10 @@ import { NextRequest } from "next/server";
 import { syncProducts } from "@/lib/shopify/sync-products";
 import { syncCustomers } from "@/lib/shopify/sync-customers";
 import { syncOrders } from "@/lib/shopify/sync-orders";
+import { syncMetaAdsDaily } from "@/lib/meta-ads/sync";
+import { isMetaAdsConfigured } from "@/lib/meta-ads/client";
 import { requireCronSecret, jsonResponse, errorResponse } from "@/lib/utils/api-helpers";
-import { subHours } from "date-fns";
+import { subDays, subHours } from "date-fns";
 
 export async function GET(request: NextRequest) {
   if (!requireCronSecret(request)) {
@@ -31,6 +33,16 @@ export async function GET(request: NextRequest) {
     results.orders = await syncOrders({ updatedSince });
   } catch (error) {
     results.orders = { error: error instanceof Error ? error.message : "Failed" };
+  }
+
+  // Meta Ads: sync yesterday (data has ~24h delay)
+  if (isMetaAdsConfigured()) {
+    try {
+      const yesterday = subDays(new Date(), 1);
+      results.metaAds = await syncMetaAdsDaily(yesterday);
+    } catch (error) {
+      results.metaAds = { error: error instanceof Error ? error.message : "Failed" };
+    }
   }
 
   return jsonResponse({ success: true, results });

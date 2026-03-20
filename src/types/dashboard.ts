@@ -74,6 +74,57 @@ export interface ProductsMetrics {
   productTrends: { date: string; productId: string; title: string; revenue: number }[];
 }
 
+export interface AdCampaignRow {
+  platform: string;
+  campaignName: string;
+  spend: number;
+  purchases: number;
+  purchaseValue: number;
+  roas: number;
+  impressions: number;
+  reach: number | null;
+  linkClicks: number;
+  ctr: number;
+  cpm: number;
+}
+
+export interface AdSummary {
+  campaigns: AdCampaignRow[];
+  platformTotals: {
+    platform: string;
+    spend: number;
+    purchases: number;
+    purchaseValue: number;
+    roas: number;
+    impressions: number;
+    reach: number | null;
+    linkClicks: number;
+    ctr: number;
+    cpm: number;
+  }[];
+  grandTotal: {
+    spend: number;
+    purchases: number;
+    purchaseValue: number;
+    roas: number;
+    impressions: number;
+    linkClicks: number;
+    ctr: number;
+    cpm: number;
+  };
+}
+
+export interface ShopifySummary {
+  totalSales: number;
+  numberOfSales: number;
+  avgOrderSpend: number;
+  lowFreqSales: number;
+  lowFreqCount: number;
+  lowFreqAvgOrderSpend: number;
+  totalAdSpend: number;
+  lowFreqRoas: number;
+}
+
 export interface CustomerMetrics {
   newVsReturning: {
     newCustomers: number;

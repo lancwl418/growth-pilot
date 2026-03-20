@@ -3,35 +3,34 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useT } from "@/hooks/use-language";
 import {
-  LayoutDashboard,
-  DollarSign,
-  Globe,
+  BarChart3,
   Package,
   Users,
   Bell,
   TrendingUp,
   Settings,
 } from "lucide-react";
+import type { Translations } from "@/lib/i18n/translations";
 
-const navItems = [
-  { href: "/overview", label: "Overview", icon: LayoutDashboard },
-  { href: "/sales", label: "Sales", icon: DollarSign },
-  { href: "/traffic", label: "Traffic", icon: Globe },
-  { href: "/products", label: "Products", icon: Package },
-  { href: "/customers", label: "Customers", icon: Users },
-  { href: "/alerts", label: "Alerts", icon: Bell },
-  { href: "/forecast", label: "Forecast", icon: TrendingUp },
-  { href: "/settings", label: "Settings", icon: Settings },
+const navItems: { href: string; key: keyof Translations["nav"]; icon: typeof BarChart3 }[] = [
+  { href: "/analytics", key: "analytics", icon: BarChart3 },
+  { href: "/products", key: "products", icon: Package },
+  { href: "/customers", key: "customers", icon: Users },
+  { href: "/alerts", key: "alerts", icon: Bell },
+  { href: "/forecast", key: "forecast", icon: TrendingUp },
+  { href: "/settings", key: "settings", icon: Settings },
 ];
 
 export function MobileNav() {
   const pathname = usePathname();
+  const t = useT();
 
   return (
     <div className="flex flex-col h-full">
       <div className="flex h-14 items-center border-b px-4">
-        <Link href="/overview" className="flex items-center gap-2 font-semibold text-lg">
+        <Link href="/analytics" className="flex items-center gap-2 font-semibold text-lg">
           <TrendingUp className="h-5 w-5 text-blue-600" />
           <span>IdeaMax</span>
         </Link>
@@ -51,7 +50,7 @@ export function MobileNav() {
               )}
             >
               <item.icon className="h-4 w-4" />
-              {item.label}
+              {t.nav[item.key]}
             </Link>
           );
         })}
