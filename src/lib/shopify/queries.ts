@@ -95,6 +95,12 @@ export const ORDERS_QUERY = `
           cancelledAt
           tags
           sourceName
+          customerJourneySummary {
+            firstVisit {
+              landingPage
+              referrerUrl
+            }
+          }
           customer {
             id
             email

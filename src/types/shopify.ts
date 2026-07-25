@@ -56,6 +56,14 @@ export interface ShopifyOrder {
   cancelledAt: string | null;
   tags: string[];
   sourceName: string;
+  // customerJourneySummary requires approved access to protected customer data.
+  // Field/value may be null if not approved or not available for the order.
+  customerJourneySummary: {
+    firstVisit: {
+      landingPage: string | null;
+      referrerUrl: string | null;
+    } | null;
+  } | null;
   customer: { id: string; email: string | null } | null;
   lineItems: ShopifyConnection<ShopifyLineItem>;
   refunds: ShopifyRefund[];

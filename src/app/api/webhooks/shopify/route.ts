@@ -64,6 +64,13 @@ function mapRestToGraphQL(rest: any) {
     cancelledAt: rest.cancelled_at,
     tags: rest.tags ? rest.tags.split(", ") : [],
     sourceName: rest.source_name,
+    // REST webhook payloads carry landing/referring site directly.
+    customerJourneySummary: {
+      firstVisit: {
+        landingPage: rest.landing_site ?? null,
+        referrerUrl: rest.referring_site ?? null,
+      },
+    },
     customer: rest.customer
       ? { id: `gid://shopify/Customer/${rest.customer.id}`, email: rest.customer.email }
       : null,

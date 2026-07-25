@@ -98,6 +98,12 @@ export async function upsertOrder(order: ShopifyOrder) {
   // Map financial status
   const financialStatus = order.displayFinancialStatus?.toLowerCase().replace(/ /g, "_") || "unknown";
 
+  // Landing/referrer URLs from the customer journey first visit (used for channel attribution).
+  // Store the full landing page URL; parsing (UTM extraction) is left to the query layer.
+  const firstVisit = order.customerJourneySummary?.firstVisit;
+  const landingSite = firstVisit?.landingPage ?? null;
+  const referringSite = firstVisit?.referrerUrl ?? null;
+
   // Upsert order
   const dbOrder = await prisma.factOrder.upsert({
     where: { shopifyId },
@@ -115,6 +121,8 @@ export async function upsertOrder(order: ShopifyOrder) {
       totalRefund,
       currency: order.totalPriceSet.shopMoney.currencyCode,
       itemCount: lineItems.reduce((sum, li) => sum + li.quantity, 0),
+      landingSite,
+      referringSite,
       sourceName: order.sourceName,
       tags: order.tags,
       cancelledAt: order.cancelledAt ? new Date(order.cancelledAt) : null,
@@ -129,6 +137,8 @@ export async function upsertOrder(order: ShopifyOrder) {
       totalTax: parseFloat(order.totalTaxSet.shopMoney.amount),
       totalRefund,
       itemCount: lineItems.reduce((sum, li) => sum + li.quantity, 0),
+      landingSite,
+      referringSite,
       cancelledAt: order.cancelledAt ? new Date(order.cancelledAt) : null,
       syncedAt: new Date(),
     },

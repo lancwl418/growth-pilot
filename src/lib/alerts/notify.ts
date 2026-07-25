@@ -33,7 +33,7 @@ export async function sendAlertEmail(alert: Alert): Promise<void> {
           ${alert.metricValue ? `<p style="color: #6b7280; font-size: 14px; margin: 0;">Metric value: <strong>${Number(alert.metricValue).toFixed(2)}</strong></p>` : ""}
           <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0;" />
           <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-            Generated at ${alert.createdAt.toISOString()} by IdeaMax Growth Dashboard
+            Generated at ${alert.createdAt.toISOString()} by IdeaMax Marketing
           </p>
         </div>
       </div>

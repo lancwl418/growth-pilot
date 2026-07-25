@@ -8,9 +8,12 @@ import {
   BarChart3,
   Package,
   Users,
+  GitBranch,
+  Filter,
   Bell,
   TrendingUp,
   Settings,
+  Share2,
 } from "lucide-react";
 import type { Translations } from "@/lib/i18n/translations";
 
@@ -18,8 +21,11 @@ const navItems: { href: string; key: keyof Translations["nav"]; icon: typeof Bar
   { href: "/analytics", key: "analytics", icon: BarChart3 },
   { href: "/products", key: "products", icon: Package },
   { href: "/customers", key: "customers", icon: Users },
+  { href: "/channels", key: "channels", icon: GitBranch },
+  { href: "/funnel", key: "funnel", icon: Filter },
   { href: "/alerts", key: "alerts", icon: Bell },
   { href: "/forecast", key: "forecast", icon: TrendingUp },
+  { href: "/social-media", key: "socialMedia", icon: Share2 },
   { href: "/settings", key: "settings", icon: Settings },
 ];
 
@@ -37,7 +43,7 @@ export function MobileNav() {
       </div>
       <nav className="flex-1 space-y-1 px-3 py-4">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
             <Link
               key={item.href}

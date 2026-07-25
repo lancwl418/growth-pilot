@@ -20,11 +20,15 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // Reading persisted locale after mount is intentional (avoids SSR hydration
+    // mismatch); the synchronous setState here is the deliberate pattern.
+    /* eslint-disable react-hooks/set-state-in-effect */
     const saved = localStorage.getItem(STORAGE_KEY) as Locale | null;
     if (saved === "en" || saved === "zh") {
       setLocaleState(saved);
     }
     setMounted(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
   const setLocale = (l: Locale) => {

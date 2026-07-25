@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "IdeaMax Growth Dashboard",
+  title: "IdeaMax Marketing",
   description: "POD Growth Dashboard - Revenue, Orders, Traffic & Analytics",
 };
 

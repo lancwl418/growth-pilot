@@ -125,6 +125,40 @@ export interface ShopifySummary {
   lowFreqRoas: number;
 }
 
+export interface ChannelQualityRow {
+  channel: string;
+  newCustomers: number;
+  repeatCustomers: number;
+  repeatRate: number; // percentage 0-100
+  avgLtv: number;
+  totalLtv: number;
+}
+
+export interface ChannelQuality {
+  channels: ChannelQualityRow[];
+  totals: {
+    newCustomers: number;
+    repeatRate: number; // overall percentage 0-100
+    avgLtv: number;
+    bestChannel: string | null; // channel with the highest total LTV
+  };
+}
+
+export interface CacTrendPoint {
+  month: string; // YYYY-MM
+  adSpend: number;
+  newCustomers: number;
+  cac: number; // adSpend / newCustomers (0 when no new customers)
+}
+
+export interface FunnelData {
+  sessions: number | null; // null when no GA4 data
+  firstOrders: number;
+  repeatInPeriod: number;
+  visitToOrder: number | null; // percentage; null when sessions is null
+  orderToRepeat: number; // percentage
+}
+
 export interface CustomerMetrics {
   newVsReturning: {
     newCustomers: number;

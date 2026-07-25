@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +10,62 @@ import { Languages } from "lucide-react";
 export default function LoginPage() {
   const t = useT();
   const { locale, setLocale } = useLanguage();
+  const [isRegister, setIsRegister] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [name, setName] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleCredentialsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    if (isRegister) {
+      if (password !== confirmPassword) {
+        setError("Passwords do not match");
+        setLoading(false);
+        return;
+      }
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error);
+        setLoading(false);
+        return;
+      }
+      // Auto sign in after registration
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+      if (!result?.ok) {
+        setError("Sign in failed after registration");
+        setLoading(false);
+        return;
+      }
+      window.location.href = "/analytics";
+    } else {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+      if (!result?.ok) {
+        setError("Invalid email or password");
+        setLoading(false);
+        return;
+      }
+      window.location.href = "/analytics";
+    }
+  };
 
   return (
     <Card className="w-full max-w-md">
@@ -27,8 +84,77 @@ export default function LoginPage() {
         <CardTitle className="text-2xl">{t.auth.title}</CardTitle>
         <CardDescription>{t.auth.subtitle}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        <form onSubmit={handleCredentialsSubmit} className="space-y-3">
+          {isRegister && (
+            <input
+              type="text"
+              placeholder={t.auth.name}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+          )}
+          <input
+            type="email"
+            placeholder={t.auth.email}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+          />
+          <input
+            type="password"
+            placeholder={t.auth.password}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+          />
+          {isRegister && (
+            <input
+              type="password"
+              placeholder={t.auth.confirmPassword}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+          )}
+          {error && <p className="text-sm text-red-500">{error}</p>}
+          <Button type="submit" className="w-full" size="lg" disabled={loading}>
+            {loading
+              ? isRegister
+                ? t.auth.registering
+                : t.auth.signingIn
+              : isRegister
+                ? t.auth.register
+                : t.auth.signIn}
+          </Button>
+        </form>
+
+        <p className="text-center text-sm text-muted-foreground">
+          {isRegister ? t.auth.haveAccount : t.auth.noAccount}{" "}
+          <button
+            type="button"
+            onClick={() => { setIsRegister(!isRegister); setError(""); }}
+            className="text-primary underline"
+          >
+            {isRegister ? t.auth.backToLogin : t.auth.register}
+          </button>
+        </p>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-card px-2 text-muted-foreground">{t.auth.or}</span>
+          </div>
+        </div>
+
         <Button
+          variant="outline"
           className="w-full"
           size="lg"
           onClick={() => signIn("google", { callbackUrl: "/analytics" })}
