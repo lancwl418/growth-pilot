@@ -32,6 +32,14 @@ export async function getTrafficMetrics(
   const totalRevenue = Number(totalsAgg._sum.purchaseRevenue || 0);
   const totalAdSpend = Number(totalsAgg._sum.adCost || 0);
 
+  // ROAS uses revenue attributed to Google paid channels only — dividing
+  // sitewide revenue by Google-only ad cost would overstate it
+  const paidAgg = await prisma.factGa4Daily.aggregate({
+    where: { ...where, channelGroup: { in: ["Paid Search", "Cross-network"] } },
+    _sum: { purchaseRevenue: true },
+  });
+  const paidRevenue = Number(paidAgg._sum.purchaseRevenue || 0);
+
   const totals = {
     sessions: totalSessions,
     users: totalsAgg._sum.users || 0,
@@ -40,7 +48,7 @@ export async function getTrafficMetrics(
     conversionRate: totalSessions > 0 ? (totalPurchases / totalSessions) * 100 : 0,
     revenue: totalRevenue,
     adSpend: totalAdSpend,
-    roas: totalAdSpend > 0 ? totalRevenue / totalAdSpend : 0,
+    roas: totalAdSpend > 0 ? paidRevenue / totalAdSpend : 0,
   };
 
   // Daily time series
