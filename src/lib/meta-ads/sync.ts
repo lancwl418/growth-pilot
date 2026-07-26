@@ -1,6 +1,42 @@
 import { prisma } from "@/lib/prisma";
 import { fetchCampaignInsights, parseInsightRow, isMetaAdsConfigured } from "./client";
-import { format, subDays, eachDayOfInterval } from "date-fns";
+import { format } from "date-fns";
+
+async function upsertInsightRows(
+  rows: Awaited<ReturnType<typeof fetchCampaignInsights>>
+): Promise<number> {
+  let total = 0;
+
+  for (const row of rows) {
+    const parsed = parseInsightRow(row);
+    const date = new Date(`${row.date_start}T00:00:00.000Z`);
+
+    const data = {
+      campaignName: parsed.campaignName,
+      adsetName: parsed.adsetName,
+      objective: parsed.objective,
+      spend: parsed.spend,
+      impressions: parsed.impressions,
+      reach: parsed.reach,
+      linkClicks: parsed.linkClicks,
+      purchases: parsed.purchases,
+      purchaseValue: parsed.purchaseValue,
+      follows: parsed.follows,
+      pageLikes: parsed.pageLikes,
+    };
+
+    await prisma.factMetaAdsDaily.upsert({
+      where: {
+        date_campaignId: { date, campaignId: parsed.campaignId },
+      },
+      create: { date, campaignId: parsed.campaignId, ...data },
+      update: { ...data, syncedAt: new Date() },
+    });
+    total++;
+  }
+
+  return total;
+}
 
 export async function syncMetaAdsDaily(targetDate: Date): Promise<number> {
   if (!isMetaAdsConfigured()) {
@@ -16,42 +52,7 @@ export async function syncMetaAdsDaily(targetDate: Date): Promise<number> {
 
   try {
     const rows = await fetchCampaignInsights(dateStr, dateStr);
-    let total = 0;
-
-    for (const row of rows) {
-      const parsed = parseInsightRow(row);
-      const date = new Date(`${row.date_start}T00:00:00.000Z`);
-
-      await prisma.factMetaAdsDaily.upsert({
-        where: {
-          date_campaignId: { date, campaignId: parsed.campaignId },
-        },
-        create: {
-          date,
-          campaignId: parsed.campaignId,
-          campaignName: parsed.campaignName,
-          adsetName: parsed.adsetName,
-          spend: parsed.spend,
-          impressions: parsed.impressions,
-          reach: parsed.reach,
-          linkClicks: parsed.linkClicks,
-          purchases: parsed.purchases,
-          purchaseValue: parsed.purchaseValue,
-        },
-        update: {
-          campaignName: parsed.campaignName,
-          adsetName: parsed.adsetName,
-          spend: parsed.spend,
-          impressions: parsed.impressions,
-          reach: parsed.reach,
-          linkClicks: parsed.linkClicks,
-          purchases: parsed.purchases,
-          purchaseValue: parsed.purchaseValue,
-          syncedAt: new Date(),
-        },
-      });
-      total++;
-    }
+    const total = await upsertInsightRows(rows);
 
     await prisma.syncLog.update({
       where: { id: syncLog.id },
@@ -83,42 +84,7 @@ export async function syncMetaAdsRange(startDate: Date, endDate: Date): Promise<
     const startStr = format(startDate, "yyyy-MM-dd");
     const endStr = format(endDate, "yyyy-MM-dd");
     const rows = await fetchCampaignInsights(startStr, endStr);
-    let total = 0;
-
-    for (const row of rows) {
-      const parsed = parseInsightRow(row);
-      const date = new Date(`${row.date_start}T00:00:00.000Z`);
-
-      await prisma.factMetaAdsDaily.upsert({
-        where: {
-          date_campaignId: { date, campaignId: parsed.campaignId },
-        },
-        create: {
-          date,
-          campaignId: parsed.campaignId,
-          campaignName: parsed.campaignName,
-          adsetName: parsed.adsetName,
-          spend: parsed.spend,
-          impressions: parsed.impressions,
-          reach: parsed.reach,
-          linkClicks: parsed.linkClicks,
-          purchases: parsed.purchases,
-          purchaseValue: parsed.purchaseValue,
-        },
-        update: {
-          campaignName: parsed.campaignName,
-          adsetName: parsed.adsetName,
-          spend: parsed.spend,
-          impressions: parsed.impressions,
-          reach: parsed.reach,
-          linkClicks: parsed.linkClicks,
-          purchases: parsed.purchases,
-          purchaseValue: parsed.purchaseValue,
-          syncedAt: new Date(),
-        },
-      });
-      total++;
-    }
+    const total = await upsertInsightRows(rows);
 
     await prisma.syncLog.update({
       where: { id: syncLog.id },

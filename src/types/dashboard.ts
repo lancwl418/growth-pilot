@@ -182,3 +182,63 @@ export interface CustomerMetrics {
     lastOrderAt: string | null;
   }[];
 }
+
+// ============ Ads Report (per-platform performance page) ============
+
+export interface AdsMetric {
+  value: number;
+  change: number | null; // % vs comparison period; null when no comparison
+}
+
+export interface GoogleAdsBlock {
+  cost: AdsMetric;
+  conversions: AdsMetric;
+  convValue: AdsMetric;
+  costPerConv: AdsMetric;
+  roas: AdsMetric;
+  avgConvValue: AdsMetric;
+  impressions: AdsMetric;
+  clicks: AdsMetric;
+  clickConvRate: AdsMetric;
+}
+
+export interface MetaConversionBlock {
+  spend: AdsMetric;
+  purchases: AdsMetric;
+  purchaseValue: AdsMetric;
+  costPerPurchase: AdsMetric;
+  roas: AdsMetric;
+  avgPurchaseValue: AdsMetric;
+  impressions: AdsMetric;
+  linkClicks: AdsMetric;
+  ctr: AdsMetric;
+  cpm: AdsMetric;
+  convRateFromAd: AdsMetric;
+}
+
+export interface MetaFanBlock {
+  instagram: { spend: number; follows: number };
+  facebook: { spend: number; likes: number };
+}
+
+export interface AdsTrendPoint {
+  period: string; // bucket label (day or ISO week start)
+  googleCost: number;
+  googleRoas: number;
+  metaSpend: number;
+  metaRoas: number;
+}
+
+export interface FreeSampleBucket {
+  lifetimeOrders: string; // "1".."5", "6+"
+  customers: number;
+  pct: number;
+}
+
+export interface AdsReport {
+  google: GoogleAdsBlock | null;
+  metaConversion: MetaConversionBlock | null;
+  metaFans: MetaFanBlock | null;
+  trend: AdsTrendPoint[];
+  freeSample: { total: number; buckets: FreeSampleBucket[] } | null;
+}

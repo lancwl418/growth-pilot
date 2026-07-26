@@ -14,6 +14,7 @@ import {
   TrendingUp,
   Settings,
   Share2,
+  Megaphone,
 } from "lucide-react";
 import type { Translations } from "@/lib/i18n/translations";
 
@@ -22,6 +23,7 @@ const navItems: { href: string; key: keyof Translations["nav"]; icon: typeof Bar
   { href: "/products", key: "products", icon: Package },
   { href: "/customers", key: "customers", icon: Users },
   { href: "/channels", key: "channels", icon: GitBranch },
+  { href: "/ads", key: "ads", icon: Megaphone },
   { href: "/funnel", key: "funnel", icon: Filter },
   { href: "/alerts", key: "alerts", icon: Bell },
   { href: "/forecast", key: "forecast", icon: TrendingUp },

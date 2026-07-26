@@ -156,12 +156,15 @@ model FactMetaAdsDaily {
   campaignId    String   @map("campaign_id")
   campaignName  String   @map("campaign_name")
   adsetName     String?  @map("adset_name")
+  objective     String?
   spend         Decimal  @default(0) @db.Decimal(12, 2)
   impressions   Int      @default(0)
   reach         Int      @default(0)
   linkClicks    Int      @default(0) @map("link_clicks")
   purchases     Int      @default(0)
   purchaseValue Decimal  @default(0) @map("purchase_value") @db.Decimal(12, 2)
+  follows       Int      @default(0)
+  pageLikes     Int      @default(0) @map("page_likes")
   syncedAt      DateTime @default(now()) @map("synced_at")
 
   @@unique([date, campaignId])

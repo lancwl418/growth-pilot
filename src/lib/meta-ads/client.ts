@@ -9,6 +9,7 @@ interface MetaInsightRow {
   campaign_id: string;
   campaign_name: string;
   adset_name?: string;
+  objective?: string;
   date_start: string;
   spend: string;
   impressions: string;
@@ -34,6 +35,7 @@ export async function fetchCampaignInsights(
     "campaign_id",
     "campaign_name",
     "adset_name",
+    "objective",
     "spend",
     "impressions",
     "reach",
@@ -81,15 +83,23 @@ export function parseInsightRow(row: MetaInsightRow) {
         a.action_type === "purchase"
     )?.value || "0";
 
+  // Fan-growth actions: "like" = FB page likes; follow-type actions = IG follows
+  const pageLikes = row.actions?.find((a) => a.action_type === "like")?.value || "0";
+  const follows =
+    row.actions?.find((a) => a.action_type.includes("follow"))?.value || "0";
+
   return {
     campaignId: row.campaign_id,
     campaignName: row.campaign_name,
     adsetName: row.adset_name || null,
+    objective: row.objective || null,
     spend: parseFloat(row.spend || "0"),
     impressions: parseInt(row.impressions || "0", 10),
     reach: parseInt(row.reach || "0", 10),
     linkClicks: parseInt(row.inline_link_clicks || "0", 10),
     purchases: parseInt(purchases, 10),
     purchaseValue: parseFloat(purchaseValue),
+    follows: parseInt(follows, 10),
+    pageLikes: parseInt(pageLikes, 10),
   };
 }

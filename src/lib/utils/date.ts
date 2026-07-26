@@ -16,6 +16,8 @@ export type DatePreset =
   | "yesterday"
   | "last7d"
   | "last30d"
+  | "thisWeek"
+  | "lastWeek"
   | "thisMonth"
   | "lastMonth"
   | "last90d"
@@ -38,6 +40,15 @@ export function getDateRange(preset: DatePreset, now = new Date()): DateRange {
       return { startDate: startOfDay(subDays(now, 6)), endDate: endOfDay(now) };
     case "last30d":
       return { startDate: startOfDay(subDays(now, 29)), endDate: endOfDay(now) };
+    case "thisWeek":
+      return { startDate: startOfWeek(now, { weekStartsOn: 1 }), endDate: endOfDay(now) };
+    case "lastWeek": {
+      const lastWeek = subDays(startOfWeek(now, { weekStartsOn: 1 }), 7);
+      return {
+        startDate: lastWeek,
+        endDate: endOfWeek(lastWeek, { weekStartsOn: 1 }),
+      };
+    }
     case "thisMonth":
       return { startDate: startOfMonth(now), endDate: endOfDay(now) };
     case "lastMonth": {
