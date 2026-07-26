@@ -66,12 +66,12 @@ export function Ga4Tab({ queryParams }: Ga4TabProps) {
               icon={<TrendingUp className="h-4 w-4" />}
             />
             <KpiCard
-              title={t.common.adSpend}
+              title={`Google ${t.common.adSpend}`}
               value={formatCurrency(data.totals.adSpend)}
               icon={<DollarSign className="h-4 w-4" />}
             />
             <KpiCard
-              title={t.common.roas}
+              title={`Google ${t.common.roas}`}
               value={data.totals.adSpend > 0 ? `${data.totals.roas.toFixed(2)}x` : t.common.na}
               icon={<TrendingUp className="h-4 w-4" />}
             />
