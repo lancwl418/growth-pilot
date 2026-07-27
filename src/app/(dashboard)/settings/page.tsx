@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,7 @@ import {
   CheckCircle,
   XCircle,
   Clock,
+  Upload,
 } from "lucide-react";
 
 interface SyncLog {
@@ -46,6 +47,46 @@ export default function SettingsPage() {
     "/api/dashboard/sync-history"
   );
   const [syncing, setSyncing] = useState<Record<string, boolean>>({});
+  const [uploading, setUploading] = useState(false);
+  const [uploadResult, setUploadResult] = useState<
+    { ok: boolean; message: string } | null
+  >(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      // Reset the input so the same file can be re-selected later.
+      e.target.value = "";
+      if (!file) return;
+
+      setUploading(true);
+      setUploadResult(null);
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch("/api/sync/meta-ads/upload", {
+          method: "POST",
+          body: formData,
+        });
+        const json = await res.json();
+        if (res.ok) {
+          setUploadResult({
+            ok: true,
+            message: `Imported ${json.recordsProcessed} rows from ${file.name}.`,
+          });
+          refresh();
+        } else {
+          setUploadResult({ ok: false, message: json.error || "Upload failed." });
+        }
+      } catch {
+        setUploadResult({ ok: false, message: "Upload failed. Please try again." });
+      } finally {
+        setUploading(false);
+      }
+    },
+    [refresh]
+  );
 
   const triggerSync = useCallback(
     async (source: string) => {
@@ -189,6 +230,53 @@ export default function SettingsPage() {
               )}
               Sync Meta Ads
             </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Meta Ads CSV upload */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="text-lg">Meta Ads — CSV Upload</CardTitle>
+          <CardDescription>
+            Meta&apos;s API is unavailable for this account, so campaign data is
+            loaded by uploading the daily &ldquo;Campaign name&rdquo; breakdown
+            exported from Ads Manager (columns: Day, Campaign name, Reach,
+            Impressions, Amount spent, Link clicks, Purchases, Purchases
+            conversion value, Facebook Likes, Instagram Follows). Re-uploading a
+            day overwrites its existing rows.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={handleUpload}
+          />
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              variant="outline"
+              disabled={uploading}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {uploading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Upload className="mr-2 h-4 w-4" />
+              )}
+              Upload Meta CSV
+            </Button>
+            {uploadResult && (
+              <span
+                className={`text-sm ${
+                  uploadResult.ok ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                {uploadResult.message}
+              </span>
+            )}
           </div>
         </CardContent>
       </Card>
