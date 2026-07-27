@@ -1,6 +1,7 @@
 const en = {
   nav: {
     analytics: "Analytics",
+    report: "Report",
     products: "Products",
     customers: "Customers",
     channels: "Channels",
@@ -286,6 +287,7 @@ const en = {
 const zh: typeof en = {
   nav: {
     analytics: "数据分析",
+    report: "周期报告",
     products: "产品",
     customers: "客户",
     channels: "渠道质量",
