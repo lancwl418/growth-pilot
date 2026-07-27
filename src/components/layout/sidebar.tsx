@@ -15,11 +15,13 @@ import {
   Settings,
   Share2,
   Megaphone,
+  FileText,
 } from "lucide-react";
 import type { Translations } from "@/lib/i18n/translations";
 
 const navItems: { href: string; key: keyof Translations["nav"]; icon: typeof BarChart3 }[] = [
   { href: "/analytics", key: "analytics", icon: BarChart3 },
+  { href: "/report", key: "report", icon: FileText },
   { href: "/products", key: "products", icon: Package },
   { href: "/customers", key: "customers", icon: Users },
   { href: "/channels", key: "channels", icon: GitBranch },
